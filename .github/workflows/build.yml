@@ -8,6 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/ps2homebrew/ps2homebrew:main
+
     steps:
       - name: Install cmake
         run: |
@@ -25,25 +26,44 @@ jobs:
       - name: Compile project
         id: make
         env:
-          KELFSERVER_API_ADDRESS: ${{ secrets.KELFSERVER_API_ADDRESS }}
-          KELFSERVER_API_KEY: ${{ secrets.KELFSERVER_API_KEY }}
+          KELFSERVER_API_ADDRESS: ""
+          KELFSERVER_API_KEY: ""
         run: |
           cmake -B build -DRELEASE=OFF -DPATCHER_ENABLE_SPLASH=OFF
-          cmake --build build
+          cmake --build build --target launcher
+          cmake --build build --target osdmenu
+
+      - name: Show build files
+        if: steps.make.outcome == 'success'
+        run: |
+          echo "===== BUILD FILES ====="
+          find build -type f \( \
+            -name "*.elf" -o \
+            -name "*.irx" -o \
+            -name "*.bin" -o \
+            -name "*.iso" -o \
+            -name "*.kelf" \
+          \) -print
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: steps.make.outcome == 'success'
         with:
-          name: artifacts
+          name: osdmenu-patcher-splash-off
           path: |
-            build/release/**
+            build/**/*.elf
+            build/**/*.irx
+            build/**/*.bin
+            build/**/*.iso
+            build/**/*.kelf
+          if-no-files-found: error
 
   release:
     needs: [build]
     runs-on: ubuntu-latest
     permissions: write-all
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+
     steps:
       - uses: actions/checkout@v4
 
@@ -61,7 +81,7 @@ jobs:
 
       - name: Prepare release archive
         run: |
-          cd artifacts
+          cd osdmenu-patcher-splash-off
           zip -r ../osdmenu-${{ env.GIT_VERSION }}.zip ./*
 
       - uses: "marvinpinto/action-automatic-releases@latest"
@@ -80,4 +100,4 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           draft: true
           files: |
-            osdmenu-${{ env.GIT_VERSION }}.zip 
+            osdmenu-${{ env.GIT_VERSION }}.zip
