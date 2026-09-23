@@ -14,26 +14,36 @@ jobs:
         run: |
           apk add cmake
 
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Fetch full clone
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --prune --unshallow
+          git fetch --prune --unshallow || true
 
       - name: Configure project
         run: |
-          cmake -B build -DRELEASE=OFF -DPATCHER_ENABLE_SPLASH=OFF
-
-      - name: Build launcher
-        run: |
-          cmake --build build --target launcher
+          cmake -B build \
+            -DRELEASE=OFF \
+            -DPATCHER_ENABLE_SPLASH=OFF
 
       - name: Build OSDMenu without KELF signing
         run: |
           cmake --build build --target osdmenu_unc
+
+      - name: Pack OSDMenu ELF
+        run: |
+          echo "===== PACKING OSDMENU ====="
+          ps2-packer \
+            build/osdmenu/osdmenu_unc.elf \
+            build/osdmenu/osdmenu.elf
+
+      - name: Build launcher
+        run: |
+          cmake --build build --target launcher
 
       - name: Show generated files
         run: |
@@ -49,7 +59,10 @@ jobs:
         with:
           name: osdmenu-1.3.0-splash-off
           path: |
-            build/**/*.elf
-            build/**/*.irx
-            build/**/*.bin
+            build/osdmenu/osdmenu.elf
+            build/osdmenu/osdmenu_unc.elf
+            build/launcher/launcher.elf
+            build/launcher/launcher_unc.elf
+            build/launcher/mmceman.irx
+            build/utils/**/*.elf
           if-no-files-found: error
