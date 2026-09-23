@@ -80,4 +80,4 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           draft: true
           files: |
-            osdmenu-${{ env.GIT_VERSION }}.zip
+            osdmenu-${{ env.GIT_VERSION }}.zip 
