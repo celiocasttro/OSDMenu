@@ -28,7 +28,7 @@ jobs:
           KELFSERVER_API_ADDRESS: ${{ secrets.KELFSERVER_API_ADDRESS }}
           KELFSERVER_API_KEY: ${{ secrets.KELFSERVER_API_KEY }}
         run: |
-          cmake -B build -DRELEASE=ON
+          cmake -B build -DRELEASE=OFF -DPATCHER_ENABLE_SPLASH=OFF
           cmake --build build
 
       - name: Upload artifacts
